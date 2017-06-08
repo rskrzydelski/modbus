@@ -51,7 +51,7 @@
 #include "cmsis_os.h"
 
 /* USER CODE BEGIN Includes */
-
+#include "modbus.h"
 /* USER CODE END Includes */
 
 /* Private variables ---------------------------------------------------------*/
@@ -60,6 +60,7 @@ DMA_HandleTypeDef hdma_usart1_tx;
 DMA_HandleTypeDef hdma_usart1_rx;
 
 osThreadId MainTaskHandle;
+
 
 /* USER CODE BEGIN PV */
 /* Private variables ---------------------------------------------------------*/
@@ -77,10 +78,10 @@ void main_task(void const * argument);
 /* Private function prototypes -----------------------------------------------*/
 void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart)
 {
-
-
-        /* Listen for input again */
-        HAL_UART_Receive_DMA(&huart1, &data_in_item, 1);
+	/* Put data into modbus parser */
+	receive_modbus_message(data_in_item);
+    /* Listen for input again */
+    HAL_UART_Receive_DMA(&huart1, &data_in_item, 1);
 }
 /* USER CODE END PFP */
 
@@ -123,6 +124,11 @@ int main(void)
   /* USER CODE BEGIN RTOS_MUTEX */
   /* add mutexes, ... */
   /* USER CODE END RTOS_MUTEX */
+
+  /* Create the semaphores(s) */
+  /* definition and creation of DataReadyRx */
+  osSemaphoreDef(DataReadyRx);
+  DataReadyRxHandle = osSemaphoreCreate(osSemaphore(DataReadyRx), 1);
 
   /* USER CODE BEGIN RTOS_SEMAPHORES */
   /* add semaphores, ... */
@@ -305,7 +311,7 @@ void main_task(void const * argument)
   /* Infinite loop */
   for(;;)
   {
-    osDelay(1);
+	  send_modbus_message(&huart1);
   }
   /* USER CODE END 5 */ 
 }
