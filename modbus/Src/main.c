@@ -52,6 +52,7 @@
 
 /* USER CODE BEGIN Includes */
 #include "modbus.h"
+#include "modbus_app.h"
 /* USER CODE END Includes */
 
 /* Private variables ---------------------------------------------------------*/
@@ -61,10 +62,14 @@ DMA_HandleTypeDef hdma_usart1_rx;
 
 osThreadId MainTaskHandle;
 
-
 /* USER CODE BEGIN PV */
 /* Private variables ---------------------------------------------------------*/
 uint8_t data_in_item;
+
+static const modbus_callbacks_t modbus_cb = {
+        .data_to_master = app_data_to_master
+};
+
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
@@ -93,7 +98,7 @@ int main(void)
 {
 
   /* USER CODE BEGIN 1 */
-
+  modbus_init(&modbus_cb);
   /* USER CODE END 1 */
 
   /* MCU Configuration----------------------------------------------------------*/
@@ -125,13 +130,10 @@ int main(void)
   /* add mutexes, ... */
   /* USER CODE END RTOS_MUTEX */
 
-  /* Create the semaphores(s) */
-  /* definition and creation of DataReadyRx */
-  osSemaphoreDef(DataReadyRx);
-  DataReadyRxHandle = osSemaphoreCreate(osSemaphore(DataReadyRx), 1);
-
   /* USER CODE BEGIN RTOS_SEMAPHORES */
   /* add semaphores, ... */
+  osSemaphoreDef(DataReadyRx);
+  DataReadyRxHandle = osSemaphoreCreate(osSemaphore(DataReadyRx), 1);
   /* USER CODE END RTOS_SEMAPHORES */
 
   /* USER CODE BEGIN RTOS_TIMERS */
@@ -308,6 +310,17 @@ void main_task(void const * argument)
 {
 
   /* USER CODE BEGIN 5 */
+    data_to_master[data_to_master_1] = 0xffff;
+    data_to_master[data_to_master_2] = 11;
+    data_to_master[data_to_master_3] = 555;
+    data_to_master[data_to_master_4] = 777;
+    data_to_master[data_to_master_5] = 1456;
+    data_to_master[data_to_master_6] = 1255;
+    data_to_master[data_to_master_7] = 9876;
+    data_to_master[data_to_master_8] = 1999;
+    data_to_master[data_to_master_9] = 222;
+    data_to_master[data_to_master_10] = 3333;
+
   /* Infinite loop */
   for(;;)
   {
