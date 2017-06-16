@@ -121,6 +121,8 @@ void send_modbus_message(UART_HandleTypeDef *uart_struct)
         /* Check CRC agreement */
         if (!(request_crc_l == calc_crc_l && request_crc_h == calc_crc_h)) {
         	    HAL_UART_Transmit_DMA(uart_struct, "ERR", 4);
+        	    /* Clear receiving buffer */
+                memset((uint8_t *)modbus_rx_buf, 0, UART0_RX_BUF_SIZE);
                 return;
         }
 
@@ -166,6 +168,8 @@ void send_modbus_message(UART_HandleTypeDef *uart_struct)
                        handle_exception(uart_struct, modbus_rx_buf[1], ILLEGAL_FUNCTION);
                        break;
         }
+        /* Clear receiving buffer */
+        memset((uint8_t *)modbus_rx_buf, 0, UART0_RX_BUF_SIZE);
 }
 
 void handle_exception(UART_HandleTypeDef *uart_struct, uint8_t function_code, int exception_code)

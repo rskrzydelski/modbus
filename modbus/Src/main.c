@@ -68,7 +68,8 @@ uint8_t data_in_item;
 
 static const modbus_callbacks_t modbus_cb = {
         .data_to_master = app_data_to_master,
-		.data_from_master = app_data_from_master
+		.data_from_master = app_data_from_master,
+		.set_coils_by_master = app_set_coils_by_master
 };
 
 /* USER CODE END PV */
