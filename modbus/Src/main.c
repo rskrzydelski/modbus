@@ -67,7 +67,8 @@ osThreadId MainTaskHandle;
 uint8_t data_in_item;
 
 static const modbus_callbacks_t modbus_cb = {
-        .data_to_master = app_data_to_master
+        .data_to_master = app_data_to_master,
+		.data_from_master = app_data_from_master
 };
 
 /* USER CODE END PV */
