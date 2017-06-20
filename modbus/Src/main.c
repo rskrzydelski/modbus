@@ -56,6 +56,8 @@
 /* USER CODE END Includes */
 
 /* Private variables ---------------------------------------------------------*/
+TIM_HandleTypeDef htim10;
+
 UART_HandleTypeDef huart1;
 DMA_HandleTypeDef hdma_usart1_tx;
 DMA_HandleTypeDef hdma_usart1_rx;
@@ -79,14 +81,19 @@ void SystemClock_Config(void);
 static void MX_GPIO_Init(void);
 static void MX_DMA_Init(void);
 static void MX_USART1_UART_Init(void);
+static void MX_TIM10_Init(void);
 void main_task(void const * argument);
 
 /* USER CODE BEGIN PFP */
 /* Private function prototypes -----------------------------------------------*/
 void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart)
 {
+	/* Start timer - 3.5 char (~ 2ms) */
+	HAL_TIM_Base_Start_IT(&htim10);
+
 	/* Put data into modbus parser */
 	receive_modbus_message(data_in_item);
+
     /* Listen for input again */
     HAL_UART_Receive_DMA(&huart1, &data_in_item, 1);
 }
@@ -123,6 +130,7 @@ int main(void)
   MX_GPIO_Init();
   MX_DMA_Init();
   MX_USART1_UART_Init();
+  MX_TIM10_Init();
 
   /* USER CODE BEGIN 2 */
   HAL_UART_Receive_DMA(&huart1, &data_in_item, 1);
@@ -237,6 +245,22 @@ void SystemClock_Config(void)
   HAL_NVIC_SetPriority(SysTick_IRQn, 15, 0);
 }
 
+/* TIM10 init function */
+static void MX_TIM10_Init(void)
+{
+
+  htim10.Instance = TIM10;
+  htim10.Init.Prescaler = 359;
+  htim10.Init.CounterMode = TIM_COUNTERMODE_UP;
+  htim10.Init.Period = 999;
+  htim10.Init.ClockDivision = TIM_CLOCKDIVISION_DIV1;
+  if (HAL_TIM_Base_Init(&htim10) != HAL_OK)
+  {
+    _Error_Handler(__FILE__, __LINE__);
+  }
+
+}
+
 /* USART1 init function */
 static void MX_USART1_UART_Init(void)
 {
@@ -342,7 +366,16 @@ void main_task(void const * argument)
 void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
 {
 /* USER CODE BEGIN Callback 0 */
-
+  /*
+   * 10 bits for charakter
+   * 19200 / 10 = 1920 characters per 1000 ms
+   * 1000 ms / 1920 = 0,52 ms on character
+   * 3.5 * 0,52 ms = 1.82 ms ~ 2 ms
+   */
+  if (htim->Instance == TIM10) {
+      modbus_timeout = true;
+      HAL_TIM_Base_Stop_IT(&htim10);
+  }
 /* USER CODE END Callback 0 */
   if (htim->Instance == TIM14) {
     HAL_IncTick();

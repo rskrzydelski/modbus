@@ -45,6 +45,14 @@ void receive_modbus_message(const char data)
         /* Index of receive buffer */
         static volatile uint8_t rx_index = 0;
 
+        if (modbus_timeout) {
+                rx_index = 0;
+                data_length = 11;
+                modbus_enable = false;
+                memset((uint8_t *)modbus_rx_buf, 0, UART0_RX_BUF_SIZE);
+                modbus_timeout = false;
+        }
+
         /* If first byte is a slave address then start to increment index of receive buffer */
         if (data == SLAVE_ADDRESS || modbus_enable) {
                 /* We catch slave address, so we suppose that data catching is started */
