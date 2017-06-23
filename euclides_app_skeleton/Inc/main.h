@@ -62,7 +62,7 @@
 #define LED_RED_GPIO_Port GPIOG
 
 /* USER CODE BEGIN Private defines */
-
+#define INCLUDE_eTaskGetState        1
 /* USER CODE END Private defines */
 
 void _Error_Handler(char *, int);

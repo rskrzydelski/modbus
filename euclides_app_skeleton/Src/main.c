@@ -53,6 +53,8 @@
 /* USER CODE BEGIN Includes */
 #include "modbus.h"
 #include "modbus_app.h"
+#include "euclides.h"
+#include "config.h"
 /* USER CODE END Includes */
 
 /* Private variables ---------------------------------------------------------*/
@@ -62,10 +64,22 @@ UART_HandleTypeDef huart1;
 DMA_HandleTypeDef hdma_usart1_tx;
 DMA_HandleTypeDef hdma_usart1_rx;
 
-osThreadId MainTaskHandle;
+osThreadId ModbusTaskHandle;
+osThreadId MainAppHandle;
 
 /* USER CODE BEGIN PV */
 /* Private variables ---------------------------------------------------------*/
+osThreadId config_task_handle;
+osThreadId safety_switch_task_handle;
+osThreadId curtain_task_handle;
+
+/* Debug tasks status variables */
+osThreadState modbus_task_state;
+osThreadState main_app_task_state;
+osThreadState curtain_task_state;
+osThreadState safety_switch_task_state;
+osThreadState config_task_state;
+
 uint8_t data_in_item;
 
 static const modbus_callbacks_t modbus_cb = {
@@ -82,9 +96,14 @@ static void MX_GPIO_Init(void);
 static void MX_DMA_Init(void);
 static void MX_USART1_UART_Init(void);
 static void MX_TIM10_Init(void);
-void main_task(void const * argument);
+void modbus_task(void const * argument);
+void main_app(void const * argument);
 
 /* USER CODE BEGIN PFP */
+void config_task(void const * argumen);
+void safety_switch_task(void const * argumen);
+void curtain_task(void const * argumen);
+
 /* Private function prototypes -----------------------------------------------*/
 void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart)
 {
@@ -153,12 +172,30 @@ int main(void)
   /* USER CODE END RTOS_TIMERS */
 
   /* Create the thread(s) */
-  /* definition and creation of MainTask */
-  osThreadDef(MainTask, main_task, osPriorityNormal, 0, 512);
-  MainTaskHandle = osThreadCreate(osThread(MainTask), NULL);
+  /* definition and creation of ModbusTask */
+  osThreadDef(ModbusTask, modbus_task, osPriorityNormal, 0, 512);
+  ModbusTaskHandle = osThreadCreate(osThread(ModbusTask), NULL);
+
+  /* definition and creation of MainApp */
+  osThreadDef(MainApp, main_app, osPriorityNormal, 0, 512);
+  MainAppHandle = osThreadCreate(osThread(MainApp), NULL);
 
   /* USER CODE BEGIN RTOS_THREADS */
   /* add threads, ... */
+  osThreadDef(ConfigTask, config_task, osPriorityNormal, 0, 512);
+  config_task_handle = osThreadCreate(osThread(ConfigTask), NULL);
+  osThreadSuspend (config_task_handle);
+  working_tasks_list[0] = config_task_handle;
+
+  osThreadDef(SafetySwitchTask, safety_switch_task, osPriorityNormal, 0, 512);
+  safety_switch_task_handle = osThreadCreate(osThread(SafetySwitchTask), NULL);
+  osThreadSuspend (safety_switch_task_handle);
+  working_tasks_list[1] = safety_switch_task_handle;
+
+  osThreadDef(CurtainTask, curtain_task, osPriorityNormal, 0, 512);
+  curtain_task_handle = osThreadCreate(osThread(CurtainTask), NULL);
+  osThreadSuspend (curtain_task_handle);
+  working_tasks_list[2] = curtain_task_handle;
   /* USER CODE END RTOS_THREADS */
 
   /* USER CODE BEGIN RTOS_QUEUES */
@@ -330,32 +367,103 @@ static void MX_GPIO_Init(void)
 }
 
 /* USER CODE BEGIN 4 */
-
-/* USER CODE END 4 */
-
-/* main_task function */
-void main_task(void const * argument)
+/* Below are the working task - those tasks can be run one at a time */
+void config_task(void const * argument)
 {
 
   /* USER CODE BEGIN 5 */
-    data_to_master[data_to_master_1] = 0xffff;
-    data_to_master[data_to_master_2] = 11;
-    data_to_master[data_to_master_3] = 555;
-    data_to_master[data_to_master_4] = 777;
-    data_to_master[data_to_master_5] = 1456;
-    data_to_master[data_to_master_6] = 1255;
-    data_to_master[data_to_master_7] = 9876;
-    data_to_master[data_to_master_8] = 1999;
-    data_to_master[data_to_master_9] = 222;
-    data_to_master[data_to_master_10] = 3333;
-
   /* Infinite loop */
   for(;;)
   {
+	  osDelay(1000);
+	  data_to_master[task_1]++;
+  }
+  /* USER CODE END 5 */
+}
 
+void safety_switch_task(void const * argument)
+{
+
+  /* USER CODE BEGIN 5 */
+  /* Infinite loop */
+  for(;;)
+  {
+	  osDelay(1000);
+	  data_to_master[task_2]++;
+  }
+  /* USER CODE END 5 */
+}
+
+void curtain_task(void const * argument)
+{
+
+  /* USER CODE BEGIN 5 */
+  /* Infinite loop */
+  for(;;)
+  {
+	  osDelay(1000);
+	  data_to_master[task_3]++;
+  }
+  /* USER CODE END 5 */
+}
+/* USER CODE END 4 */
+
+/* modbus_task function */
+void modbus_task(void const * argument)
+{
+
+  /* USER CODE BEGIN 5 */
+  /* Infinite loop */
+  for(;;)
+  {
 	  send_modbus_message(&huart1);
+
+	  /* Copy coils to holding register to ensure client that set button */
+	  data_to_master[button_info_g1] = set_coils_by_master[buttons_g1] | (set_coils_by_master[buttons_g2] << 8);
   }
   /* USER CODE END 5 */ 
+}
+
+/* main_app function */
+void main_app(void const * argument)
+{
+  /* USER CODE BEGIN main_app */
+  /* Infinite loop */
+  for(;;)
+  {
+        main_app_task_state = osThreadGetState(MainAppHandle);
+        modbus_task_state = osThreadGetState(ModbusTaskHandle);
+        config_task_state = osThreadGetState(config_task_handle);
+        safety_switch_task_state = osThreadGetState(safety_switch_task_handle);
+        curtain_task_state = osThreadGetState(curtain_task_handle);
+
+        switch (set_coils_by_master[buttons_g1]) {
+                case SW1_G1_GO_TO_CONFIG:
+                        KeepOnlyThisTask(config_task_handle);
+                        osThreadResume (config_task_handle);
+                        RST_BUTTON_G1(SW1_G1_GO_TO_CONFIG);
+                        break;
+
+                case SW2_G1_GO_TO_CURTAIN:
+                        KeepOnlyThisTask(curtain_task_handle);
+                        osThreadResume (curtain_task_handle);
+                        RST_BUTTON_G1(SW2_G1_GO_TO_CURTAIN);
+                        break;
+
+                case SW3_G1_GO_TO_SAFETY_SWITCH:
+                        KeepOnlyThisTask(safety_switch_task_handle);
+                        osThreadResume (safety_switch_task_handle);
+                        RST_BUTTON_G1(SW3_G1_GO_TO_SAFETY_SWITCH);
+                        break;
+
+                case SW8_G1_TERMINATE_PROCEDURE:
+                        /* Suspend all working tasks */
+                        KeepOnlyThisTask(NULL);
+                        RST_BUTTON_G1(SW8_G1_TERMINATE_PROCEDURE);
+                        break;
+        }
+  }
+  /* USER CODE END main_app */
 }
 
 /**
