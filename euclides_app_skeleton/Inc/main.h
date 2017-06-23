@@ -56,8 +56,8 @@
 
 /* Private define ------------------------------------------------------------*/
 
-#define LED_GREEN_Pin GPIO_PIN_13
-#define LED_GREEN_GPIO_Port GPIOG
+#define LINK_LED_Pin GPIO_PIN_13
+#define LINK_LED_GPIO_Port GPIOG
 #define LED_RED_Pin GPIO_PIN_14
 #define LED_RED_GPIO_Port GPIOG
 

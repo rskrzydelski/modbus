@@ -91,6 +91,8 @@ void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart)
 	/* Start timer - 3.5 char (~ 2ms) */
 	HAL_TIM_Base_Start_IT(&htim10);
 
+    HAL_GPIO_WritePin(LINK_LED_GPIO_Port, LINK_LED_Pin, GPIO_PIN_SET);
+
 	/* Put data into modbus parser */
 	receive_modbus_message(data_in_item);
 
@@ -316,10 +318,10 @@ static void MX_GPIO_Init(void)
   __HAL_RCC_GPIOG_CLK_ENABLE();
 
   /*Configure GPIO pin Output Level */
-  HAL_GPIO_WritePin(GPIOG, LED_GREEN_Pin|LED_RED_Pin, GPIO_PIN_RESET);
+  HAL_GPIO_WritePin(GPIOG, LINK_LED_Pin|LED_RED_Pin, GPIO_PIN_RESET);
 
-  /*Configure GPIO pins : LED_GREEN_Pin LED_RED_Pin */
-  GPIO_InitStruct.Pin = LED_GREEN_Pin|LED_RED_Pin;
+  /*Configure GPIO pins : LINK_LED_Pin LED_RED_Pin */
+  GPIO_InitStruct.Pin = LINK_LED_Pin|LED_RED_Pin;
   GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
   GPIO_InitStruct.Pull = GPIO_NOPULL;
   GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
@@ -350,6 +352,7 @@ void main_task(void const * argument)
   /* Infinite loop */
   for(;;)
   {
+
 	  send_modbus_message(&huart1);
   }
   /* USER CODE END 5 */ 
@@ -374,6 +377,7 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
    */
   if (htim->Instance == TIM10) {
       modbus_timeout = true;
+      HAL_GPIO_WritePin(LINK_LED_GPIO_Port, LINK_LED_Pin, GPIO_PIN_RESET);
       HAL_TIM_Base_Stop_IT(&htim10);
   }
 /* USER CODE END Callback 0 */
