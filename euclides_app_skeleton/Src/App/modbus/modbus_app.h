@@ -30,9 +30,12 @@ enum {
 	SET_COILS_BY_MASTER_NUM
 };
 
-uint16_t data_to_master[DATA_TO_MASTER_NUM];
-uint16_t data_from_master[DATA_FROM_MASTER_NUM];
-uint8_t set_coils_by_master[SET_COILS_BY_MASTER_NUM];
+/* The volatile tells the compiler that it must read/write the variable every time the program says to do so.
+ * This variables are shares between many tasks.
+ *  */
+volatile uint16_t data_to_master[DATA_TO_MASTER_NUM];
+volatile uint16_t data_from_master[DATA_FROM_MASTER_NUM];
+volatile uint8_t set_coils_by_master[SET_COILS_BY_MASTER_NUM];
 
 /**
  * \brief Handle modbus function 0x03 (data to master)
