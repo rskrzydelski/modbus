@@ -45,6 +45,9 @@
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/euclides_app_skeleton/Middlewares/Third_Party/modbus/link_layer}&quot;"/>
 									<listOptionValue builtIn="false" value="../Src/App/measure"/>
 									<listOptionValue builtIn="false" value="../Src/App/config"/>
+									<listOptionValue builtIn="false" value="../Src/SEGGER/Src/Config"/>
+									<listOptionValue builtIn="false" value="../Src/SEGGER/Src/SEGGER"/>
+									<listOptionValue builtIn="false" value="../Src/SEGGER/Src/OS"/>
 								</option>
 								<option id="gnu.c.compiler.option.preprocessor.def.symbols.1518355553" name="Defined symbols (-D)" superClass="gnu.c.compiler.option.preprocessor.def.symbols" useByScannerDiscovery="false" valueType="definedSymbols">
 									<listOptionValue builtIn="false" value="__weak=__attribute__((weak))"/>
@@ -80,11 +83,11 @@
 						</toolChain>
 					</folderInfo>
 					<sourceEntries>
-						<entry flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name="startup"/>
-						<entry flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name="Middlewares"/>
 						<entry flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name="Drivers"/>
-						<entry flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name="Src"/>
 						<entry flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name="Inc"/>
+						<entry flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name="Middlewares"/>
+						<entry flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name="Src"/>
+						<entry flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name="startup"/>
 					</sourceEntries>
 				</configuration>
 			</storageModule>
@@ -197,4 +200,5 @@
 		<configuration configurationName="Release"/>
 	</storageModule>
 	<storageModule moduleId="org.eclipse.cdt.make.core.buildtargets"/>
+	<storageModule moduleId="org.eclipse.cdt.internal.ui.text.commentOwnerProjectMappings"/>
 </cproject>

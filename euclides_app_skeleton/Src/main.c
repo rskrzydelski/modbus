@@ -55,6 +55,7 @@
 #include "modbus_app.h"
 #include "euclides.h"
 #include "config.h"
+#include "SEGGER_SYSVIEW.h"
 /* USER CODE END Includes */
 
 /* Private variables ---------------------------------------------------------*/
@@ -155,6 +156,8 @@ int main(void)
 
   /* USER CODE BEGIN 2 */
   HAL_UART_Receive_DMA(&huart1, &data_in_item, 1);
+
+  SEGGER_SYSVIEW_Conf();
   /* USER CODE END 2 */
 
   /* USER CODE BEGIN RTOS_MUTEX */
