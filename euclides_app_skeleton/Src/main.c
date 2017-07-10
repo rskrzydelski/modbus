@@ -59,6 +59,8 @@
 /* USER CODE END Includes */
 
 /* Private variables ---------------------------------------------------------*/
+TIM_HandleTypeDef htim1;
+TIM_HandleTypeDef htim3;
 TIM_HandleTypeDef htim10;
 
 UART_HandleTypeDef huart1;
@@ -89,6 +91,15 @@ static const modbus_callbacks_t modbus_cb = {
 		.set_coils_by_master = app_set_coils_by_master
 };
 
+volatile uint16_t pulse_count;
+volatile uint8_t dir;
+volatile uint16_t ind_pulse;
+
+volatile uint32_t start_pulse;
+volatile uint32_t end_pulse;
+volatile uint32_t linear_T;
+volatile bool IC_linear_toggle_value = false;
+
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
@@ -97,6 +108,8 @@ static void MX_GPIO_Init(void);
 static void MX_DMA_Init(void);
 static void MX_USART1_UART_Init(void);
 static void MX_TIM10_Init(void);
+static void MX_TIM1_Init(void);
+static void MX_TIM3_Init(void);
 void modbus_task(void const * argument);
 void main_app(void const * argument);
 
@@ -118,6 +131,40 @@ void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart)
 
     /* Listen for input again */
     HAL_UART_Receive_DMA(&huart1, &data_in_item, 1);
+}
+
+/* This interrupt is called on every encoder edge */
+void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin)
+{
+    if (GPIO_Pin == L_ENCODER_IND_A_Pin) {
+    	ind_pulse++;
+    }
+
+    if (GPIO_Pin == L_ENCODER_IND_B_Pin) {
+    	ind_pulse++;
+    }
+}
+
+void HAL_TIM_IC_CaptureCallback(TIM_HandleTypeDef *htim)
+{
+	if (htim->Instance == TIM3) {
+
+		/* Linear velocity capture - period */
+		if (!IC_linear_toggle_value) {
+			start_pulse = TIM3->CCR2;
+			IC_linear_toggle_value = true;
+		} else {
+			end_pulse = TIM3->CCR2;
+
+			if (end_pulse > start_pulse) {
+				linear_T = end_pulse - start_pulse;
+			} else {
+				linear_T = (65535 - start_pulse) + end_pulse;
+			}
+
+			IC_linear_toggle_value = false;
+		}
+	}
 }
 /* USER CODE END PFP */
 
@@ -153,10 +200,14 @@ int main(void)
   MX_DMA_Init();
   MX_USART1_UART_Init();
   MX_TIM10_Init();
+  MX_TIM1_Init();
+  MX_TIM3_Init();
 
   /* USER CODE BEGIN 2 */
   HAL_UART_Receive_DMA(&huart1, &data_in_item, 1);
-
+  TIM1->CNT = 0;
+  HAL_TIM_Encoder_Start(&htim1, TIM_CHANNEL_ALL);
+  HAL_TIM_IC_Start_IT(&htim3, TIM_CHANNEL_2);
   SEGGER_SYSVIEW_Conf();
   /* USER CODE END 2 */
 
@@ -287,6 +338,89 @@ void SystemClock_Config(void)
   HAL_NVIC_SetPriority(SysTick_IRQn, 15, 0);
 }
 
+/* TIM1 init function */
+static void MX_TIM1_Init(void)
+{
+
+  TIM_Encoder_InitTypeDef sConfig;
+  TIM_MasterConfigTypeDef sMasterConfig;
+
+  htim1.Instance = TIM1;
+  htim1.Init.Prescaler = 0;
+  htim1.Init.CounterMode = TIM_COUNTERMODE_UP;
+  htim1.Init.Period = 40000;
+  htim1.Init.ClockDivision = TIM_CLOCKDIVISION_DIV1;
+  htim1.Init.RepetitionCounter = 0;
+  sConfig.EncoderMode = TIM_ENCODERMODE_TI12;
+  sConfig.IC1Polarity = TIM_ICPOLARITY_RISING;
+  sConfig.IC1Selection = TIM_ICSELECTION_DIRECTTI;
+  sConfig.IC1Prescaler = TIM_ICPSC_DIV1;
+  sConfig.IC1Filter = 15;
+  sConfig.IC2Polarity = TIM_ICPOLARITY_RISING;
+  sConfig.IC2Selection = TIM_ICSELECTION_DIRECTTI;
+  sConfig.IC2Prescaler = TIM_ICPSC_DIV1;
+  sConfig.IC2Filter = 15;
+  if (HAL_TIM_Encoder_Init(&htim1, &sConfig) != HAL_OK)
+  {
+    _Error_Handler(__FILE__, __LINE__);
+  }
+
+  sMasterConfig.MasterOutputTrigger = TIM_TRGO_RESET;
+  sMasterConfig.MasterSlaveMode = TIM_MASTERSLAVEMODE_DISABLE;
+  if (HAL_TIMEx_MasterConfigSynchronization(&htim1, &sMasterConfig) != HAL_OK)
+  {
+    _Error_Handler(__FILE__, __LINE__);
+  }
+
+}
+
+/* TIM3 init function */
+static void MX_TIM3_Init(void)
+{
+
+  TIM_ClockConfigTypeDef sClockSourceConfig;
+  TIM_MasterConfigTypeDef sMasterConfig;
+  TIM_IC_InitTypeDef sConfigIC;
+
+  htim3.Instance = TIM3;
+  htim3.Init.Prescaler = 2249;
+  htim3.Init.CounterMode = TIM_COUNTERMODE_UP;
+  htim3.Init.Period = 65535;
+  htim3.Init.ClockDivision = TIM_CLOCKDIVISION_DIV1;
+  if (HAL_TIM_Base_Init(&htim3) != HAL_OK)
+  {
+    _Error_Handler(__FILE__, __LINE__);
+  }
+
+  sClockSourceConfig.ClockSource = TIM_CLOCKSOURCE_INTERNAL;
+  if (HAL_TIM_ConfigClockSource(&htim3, &sClockSourceConfig) != HAL_OK)
+  {
+    _Error_Handler(__FILE__, __LINE__);
+  }
+
+  if (HAL_TIM_IC_Init(&htim3) != HAL_OK)
+  {
+    _Error_Handler(__FILE__, __LINE__);
+  }
+
+  sMasterConfig.MasterOutputTrigger = TIM_TRGO_RESET;
+  sMasterConfig.MasterSlaveMode = TIM_MASTERSLAVEMODE_DISABLE;
+  if (HAL_TIMEx_MasterConfigSynchronization(&htim3, &sMasterConfig) != HAL_OK)
+  {
+    _Error_Handler(__FILE__, __LINE__);
+  }
+
+  sConfigIC.ICPolarity = TIM_INPUTCHANNELPOLARITY_BOTHEDGE;
+  sConfigIC.ICSelection = TIM_ICSELECTION_DIRECTTI;
+  sConfigIC.ICPrescaler = TIM_ICPSC_DIV1;
+  sConfigIC.ICFilter = 0;
+  if (HAL_TIM_IC_ConfigChannel(&htim3, &sConfigIC, TIM_CHANNEL_2) != HAL_OK)
+  {
+    _Error_Handler(__FILE__, __LINE__);
+  }
+
+}
+
 /* TIM10 init function */
 static void MX_TIM10_Init(void)
 {
@@ -355,10 +489,17 @@ static void MX_GPIO_Init(void)
   /* GPIO Ports Clock Enable */
   __HAL_RCC_GPIOH_CLK_ENABLE();
   __HAL_RCC_GPIOA_CLK_ENABLE();
+  __HAL_RCC_GPIOE_CLK_ENABLE();
   __HAL_RCC_GPIOG_CLK_ENABLE();
 
   /*Configure GPIO pin Output Level */
   HAL_GPIO_WritePin(GPIOG, LINK_LED_Pin|LED_RED_Pin, GPIO_PIN_RESET);
+
+  /*Configure GPIO pins : L_ENCODER_IND_B_Pin L_ENCODER_IND_A_Pin */
+  GPIO_InitStruct.Pin = L_ENCODER_IND_B_Pin|L_ENCODER_IND_A_Pin;
+  GPIO_InitStruct.Mode = GPIO_MODE_IT_RISING_FALLING;
+  GPIO_InitStruct.Pull = GPIO_PULLDOWN;
+  HAL_GPIO_Init(GPIOE, &GPIO_InitStruct);
 
   /*Configure GPIO pins : LINK_LED_Pin LED_RED_Pin */
   GPIO_InitStruct.Pin = LINK_LED_Pin|LED_RED_Pin;
@@ -367,47 +508,42 @@ static void MX_GPIO_Init(void)
   GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
   HAL_GPIO_Init(GPIOG, &GPIO_InitStruct);
 
+  /* EXTI interrupt init*/
+  HAL_NVIC_SetPriority(EXTI9_5_IRQn, 5, 0);
+  HAL_NVIC_EnableIRQ(EXTI9_5_IRQn);
+
 }
 
 /* USER CODE BEGIN 4 */
 /* Below are the working task - those tasks can be run one at a time */
 void config_task(void const * argument)
 {
-
-  /* USER CODE BEGIN 5 */
   /* Infinite loop */
   for(;;)
   {
 	  osDelay(1000);
 	  data_to_master[task_1]++;
   }
-  /* USER CODE END 5 */
 }
 
 void safety_switch_task(void const * argument)
 {
-
-  /* USER CODE BEGIN 5 */
   /* Infinite loop */
   for(;;)
   {
 	  osDelay(1000);
 	  data_to_master[task_2]++;
   }
-  /* USER CODE END 5 */
 }
 
 void curtain_task(void const * argument)
 {
-
-  /* USER CODE BEGIN 5 */
   /* Infinite loop */
   for(;;)
   {
 	  osDelay(1000);
 	  data_to_master[task_3]++;
   }
-  /* USER CODE END 5 */
 }
 /* USER CODE END 4 */
 
@@ -434,6 +570,11 @@ void main_app(void const * argument)
   /* Infinite loop */
   for(;;)
   {
+
+	    pulse_count = TIM1->CNT;
+	    dir = ((TIM1->CR1 & TIM_CR1_DIR) >> 4);
+	    data_to_master[device_status_g1] = 123;
+
         main_app_task_state = osThreadGetState(MainAppHandle);
         modbus_task_state = osThreadGetState(ModbusTaskHandle);
         config_task_state = osThreadGetState(config_task_handle);

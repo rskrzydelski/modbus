@@ -56,6 +56,18 @@
 
 /* Private define ------------------------------------------------------------*/
 
+#define IC_PREDKOSC_LINIOWA_Pin GPIO_PIN_7
+#define IC_PREDKOSC_LINIOWA_GPIO_Port GPIOA
+#define L_ENCODER_IND_B_Pin GPIO_PIN_7
+#define L_ENCODER_IND_B_GPIO_Port GPIOE
+#define L_ENCODER_IND_B_EXTI_IRQn EXTI9_5_IRQn
+#define L_ENCODER_IND_A_Pin GPIO_PIN_8
+#define L_ENCODER_IND_A_GPIO_Port GPIOE
+#define L_ENCODER_IND_A_EXTI_IRQn EXTI9_5_IRQn
+#define LINEAR_ENCODER_B_Pin GPIO_PIN_9
+#define LINEAR_ENCODER_B_GPIO_Port GPIOE
+#define LINEAR_ENCODER_A_Pin GPIO_PIN_11
+#define LINEAR_ENCODER_A_GPIO_Port GPIOE
 #define LINK_LED_Pin GPIO_PIN_13
 #define LINK_LED_GPIO_Port GPIOG
 #define LED_RED_Pin GPIO_PIN_14
