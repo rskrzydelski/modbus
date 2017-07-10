@@ -25,13 +25,13 @@
 #define CLEAR_ALL_ST_G1      (data_to_master[device_status_g1] = 0)
 #define CLEAR_ALL_ST_G2      (data_to_master[device_status_g2] = 0)
 
-#define RST_BUTTON_G1(a)     ((set_coils_by_master[buttons_g1]) &= ~(a))
+#define RST_BUTTON_G1(a)     ((set_coils_by_master[momentary_sw_g1]) &= ~(a))
 
 /* Device statuses - if non status is set then device is in idle state */
-#define ST_G1_CONFIGURATION         0b0000000000000001					/* CONFIGURATION MODE */
-#define ST_G1_CURTAIN       		0b0000000000000010					/* CURTAIN MODE */
-#define ST_G1_SAFETY_SWITCH		    0b0000000000000100					/* SAFETY SWITCH MODE */
-#define ST_G1_4				        0b0000000000001000					/*  */
+#define ST_G1_1                     0b0000000000000001					/* ??? */
+#define ST_G1_CONFIGURATION         0b0000000000000010					/* CONFIGURATION MODE */
+#define ST_G1_CURTAIN		        0b0000000000000100					/* CURTAIN MODE */
+#define ST_G1_SAFETY_SWITCH         0b0000000000001000					/* SAFETY SWITCH MODE */
 #define ST_G1_5				        0b0000000000010000					/*  */
 #define ST_G1_6				        0b0000000000100000					/*  */
 #define ST_G1_7				        0b0000000001000000					/*  */

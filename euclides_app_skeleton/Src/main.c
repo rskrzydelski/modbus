@@ -422,7 +422,7 @@ void modbus_task(void const * argument)
 	  send_modbus_message(&huart1);
 
 	  /* Copy coils to holding register to ensure client that set button */
-	  data_to_master[button_info_g1] = set_coils_by_master[buttons_g1] | (set_coils_by_master[buttons_g2] << 8);
+	  data_to_master[button_info_g1] = set_coils_by_master[momentary_sw_g1] | (set_coils_by_master[momentary_sw_g2] << 8);
   }
   /* USER CODE END 5 */ 
 }
@@ -440,9 +440,10 @@ void main_app(void const * argument)
         safety_switch_task_state = osThreadGetState(safety_switch_task_handle);
         curtain_task_state = osThreadGetState(curtain_task_handle);
 
-        switch (set_coils_by_master[buttons_g1]) {
+        switch (set_coils_by_master[momentary_sw_g1]) {
                 case SW1_G1_GO_TO_CONFIG:
                         KeepOnlyThisTask(config_task_handle);
+                        SET_STATUS_G1(ST_G1_CONFIGURATION);
                         osThreadResume (config_task_handle);
                         RST_BUTTON_G1(SW1_G1_GO_TO_CONFIG);
                         break;

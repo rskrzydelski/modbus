@@ -26,7 +26,7 @@ enum {
 };
 
 enum {
-	buttons_g1, buttons_g2,
+	momentary_sw_g1, momentary_sw_g2,
 	SET_COILS_BY_MASTER_NUM
 };
 
