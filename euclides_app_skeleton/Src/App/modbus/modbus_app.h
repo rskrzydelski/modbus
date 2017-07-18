@@ -15,13 +15,13 @@
 #include "modbus.h"
 
 enum {
-	device_status_g1, device_status_g2, button_info_g1, button_info_g2, task_1,
-	task_2, task_3, data_to_master_8, data_to_master_9, data_to_master_10,
+	device_status_g1, device_status_g2, data_to_master_1, data_to_master_2, data_to_master_3,
+	data_to_master_4, data_to_master_5, data_to_master_6, data_to_master_7, data_to_master_8,
 	DATA_TO_MASTER_NUM
 };
 
 enum {
-	selected_procedure, data_from_master_2,
+	time_overflow_idx, data_from_master_2,
 	DATA_FROM_MASTER_NUM
 };
 

@@ -42,6 +42,7 @@ typedef struct {
 } request_message_info_t;
 
 volatile bool modbus_timeout;
+uint8_t data_in_item;
 
 /* Event which inform that modbus data received */
 osSemaphoreId DataReadyRxHandle;

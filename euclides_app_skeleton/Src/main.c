@@ -72,10 +72,6 @@ osThreadId MainAppHandle;
 
 /* USER CODE BEGIN PV */
 /* Private variables ---------------------------------------------------------*/
-osThreadId config_task_handle;
-osThreadId safety_switch_task_handle;
-osThreadId curtain_task_handle;
-
 /* Debug tasks status variables */
 osThreadState modbus_task_state;
 osThreadState main_app_task_state;
@@ -83,23 +79,11 @@ osThreadState curtain_task_state;
 osThreadState safety_switch_task_state;
 osThreadState config_task_state;
 
-uint8_t data_in_item;
-
 static const modbus_callbacks_t modbus_cb = {
         .data_to_master = app_data_to_master,
 		.data_from_master = app_data_from_master,
 		.set_coils_by_master = app_set_coils_by_master
 };
-
-volatile uint16_t pulse_count;
-volatile uint8_t dir;
-volatile uint16_t ind_pulse;
-
-volatile uint32_t start_pulse;
-volatile uint32_t end_pulse;
-volatile uint32_t linear_T;
-volatile bool IC_linear_toggle_value = false;
-
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
@@ -114,58 +98,9 @@ void modbus_task(void const * argument);
 void main_app(void const * argument);
 
 /* USER CODE BEGIN PFP */
-void config_task(void const * argumen);
-void safety_switch_task(void const * argumen);
-void curtain_task(void const * argumen);
 
 /* Private function prototypes -----------------------------------------------*/
-void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart)
-{
-	/* Start timer - 3.5 char (~ 2ms) */
-	HAL_TIM_Base_Start_IT(&htim10);
 
-    HAL_GPIO_WritePin(LINK_LED_GPIO_Port, LINK_LED_Pin, GPIO_PIN_SET);
-
-	/* Put data into modbus parser */
-	receive_modbus_message(data_in_item);
-
-    /* Listen for input again */
-    HAL_UART_Receive_DMA(&huart1, &data_in_item, 1);
-}
-
-/* This interrupt is called on every encoder edge */
-void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin)
-{
-    if (GPIO_Pin == L_ENCODER_IND_A_Pin) {
-    	ind_pulse++;
-    }
-
-    if (GPIO_Pin == L_ENCODER_IND_B_Pin) {
-    	ind_pulse++;
-    }
-}
-
-void HAL_TIM_IC_CaptureCallback(TIM_HandleTypeDef *htim)
-{
-	if (htim->Instance == TIM3) {
-
-		/* Linear velocity capture - period */
-		if (!IC_linear_toggle_value) {
-			start_pulse = TIM3->CCR2;
-			IC_linear_toggle_value = true;
-		} else {
-			end_pulse = TIM3->CCR2;
-
-			if (end_pulse > start_pulse) {
-				linear_T = end_pulse - start_pulse;
-			} else {
-				linear_T = (65535 - start_pulse) + end_pulse;
-			}
-
-			IC_linear_toggle_value = false;
-		}
-	}
-}
 /* USER CODE END PFP */
 
 /* USER CODE BEGIN 0 */
@@ -185,7 +120,8 @@ int main(void)
   HAL_Init();
 
   /* USER CODE BEGIN Init */
-
+  /* Default parameters initialization */
+  time_overflow_cnf = 3000;
   /* USER CODE END Init */
 
   /* Configure the system clock */
@@ -205,10 +141,6 @@ int main(void)
 
   /* USER CODE BEGIN 2 */
   HAL_UART_Receive_DMA(&huart1, &data_in_item, 1);
-  TIM1->CNT = 0;
-  HAL_TIM_Encoder_Start(&htim1, TIM_CHANNEL_ALL);
-  HAL_TIM_IC_Start_IT(&htim3, TIM_CHANNEL_2);
-  SEGGER_SYSVIEW_Conf();
   /* USER CODE END 2 */
 
   /* USER CODE BEGIN RTOS_MUTEX */
@@ -236,6 +168,7 @@ int main(void)
 
   /* USER CODE BEGIN RTOS_THREADS */
   /* add threads, ... */
+  /* Working tasks */
   osThreadDef(ConfigTask, config_task, osPriorityNormal, 0, 512);
   config_task_handle = osThreadCreate(osThread(ConfigTask), NULL);
   osThreadSuspend (config_task_handle);
@@ -515,36 +448,7 @@ static void MX_GPIO_Init(void)
 }
 
 /* USER CODE BEGIN 4 */
-/* Below are the working task - those tasks can be run one at a time */
-void config_task(void const * argument)
-{
-  /* Infinite loop */
-  for(;;)
-  {
-	  osDelay(1000);
-	  data_to_master[task_1]++;
-  }
-}
 
-void safety_switch_task(void const * argument)
-{
-  /* Infinite loop */
-  for(;;)
-  {
-	  osDelay(1000);
-	  data_to_master[task_2]++;
-  }
-}
-
-void curtain_task(void const * argument)
-{
-  /* Infinite loop */
-  for(;;)
-  {
-	  osDelay(1000);
-	  data_to_master[task_3]++;
-  }
-}
 /* USER CODE END 4 */
 
 /* modbus_task function */
@@ -556,9 +460,6 @@ void modbus_task(void const * argument)
   for(;;)
   {
 	  send_modbus_message(&huart1);
-
-	  /* Copy coils to holding register to ensure client that set button */
-	  data_to_master[button_info_g1] = set_coils_by_master[momentary_sw_g1] | (set_coils_by_master[momentary_sw_g2] << 8);
   }
   /* USER CODE END 5 */ 
 }
@@ -570,11 +471,6 @@ void main_app(void const * argument)
   /* Infinite loop */
   for(;;)
   {
-
-	    pulse_count = TIM1->CNT;
-	    dir = ((TIM1->CR1 & TIM_CR1_DIR) >> 4);
-	    data_to_master[device_status_g1] = 123;
-
         main_app_task_state = osThreadGetState(MainAppHandle);
         modbus_task_state = osThreadGetState(ModbusTaskHandle);
         config_task_state = osThreadGetState(config_task_handle);
@@ -584,26 +480,31 @@ void main_app(void const * argument)
         switch (set_coils_by_master[momentary_sw_g1]) {
                 case SW1_G1_GO_TO_CONFIG:
                         KeepOnlyThisTask(config_task_handle);
-                        SET_STATUS_G1(ST_G1_CONFIGURATION);
                         osThreadResume (config_task_handle);
+                        SET_STATUS_G1(ST_G1_CONFIGURATION);
                         RST_BUTTON_G1(SW1_G1_GO_TO_CONFIG);
                         break;
 
                 case SW2_G1_GO_TO_CURTAIN:
                         KeepOnlyThisTask(curtain_task_handle);
                         osThreadResume (curtain_task_handle);
+                        SET_STATUS_G1(ST_G1_CURTAIN);
                         RST_BUTTON_G1(SW2_G1_GO_TO_CURTAIN);
                         break;
 
                 case SW3_G1_GO_TO_SAFETY_SWITCH:
                         KeepOnlyThisTask(safety_switch_task_handle);
                         osThreadResume (safety_switch_task_handle);
+                        SET_STATUS_G1(ST_G1_SAFETY_SWITCH);
                         RST_BUTTON_G1(SW3_G1_GO_TO_SAFETY_SWITCH);
                         break;
 
                 case SW8_G1_TERMINATE_PROCEDURE:
-                        /* Suspend all working tasks */
+                        /* Suspend all working tasks and clear tasks statues */
                         KeepOnlyThisTask(NULL);
+                        RST_STATUS_G1(ST_G1_CONFIGURATION);
+                        RST_STATUS_G1(ST_G1_CURTAIN);
+                        RST_STATUS_G1(ST_G1_SAFETY_SWITCH);
                         RST_BUTTON_G1(SW8_G1_TERMINATE_PROCEDURE);
                         break;
         }

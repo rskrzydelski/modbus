@@ -43,8 +43,8 @@
 									<listOptionValue builtIn="false" value="../Src/App/modbus" />
 									<listOptionValue builtIn="false" value="../Drivers/CMSIS/Include" />
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/euclides_app_skeleton/Middlewares/Third_Party/modbus/link_layer}&quot;" />
-									<listOptionValue builtIn="false" value="../Src/App/measure" />
 									<listOptionValue builtIn="false" value="../Src/App/config" />
+									<listOptionValue builtIn="false" value="../Src/App/measure/include" />
 									<listOptionValue builtIn="false" value="../Src/SEGGER/Src/Config" />
 									<listOptionValue builtIn="false" value="../Src/SEGGER/Src/SEGGER" />
 									<listOptionValue builtIn="false" value="../Src/SEGGER/Src/OS" />

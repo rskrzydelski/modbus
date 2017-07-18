@@ -11,6 +11,9 @@
 #define APP_MEASURE_EUCLIDES_H_
 
 #include "modbus_app.h"
+#include "config_task.h"
+#include "curtain_task.h"
+#include "safety_switch_task.h"
 
 /* Macros used for set and reset status device */
 
