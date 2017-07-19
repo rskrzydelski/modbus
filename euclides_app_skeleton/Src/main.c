@@ -60,8 +60,11 @@
 
 /* Private variables ---------------------------------------------------------*/
 TIM_HandleTypeDef htim1;
+TIM_HandleTypeDef htim2;
 TIM_HandleTypeDef htim3;
+TIM_HandleTypeDef htim5;
 TIM_HandleTypeDef htim10;
+TIM_HandleTypeDef htim11;
 
 UART_HandleTypeDef huart1;
 DMA_HandleTypeDef hdma_usart1_tx;
@@ -94,6 +97,9 @@ static void MX_USART1_UART_Init(void);
 static void MX_TIM10_Init(void);
 static void MX_TIM1_Init(void);
 static void MX_TIM3_Init(void);
+static void MX_TIM11_Init(void);
+static void MX_TIM2_Init(void);
+static void MX_TIM5_Init(void);
 void modbus_task(void const * argument);
 void main_app(void const * argument);
 
@@ -138,8 +144,14 @@ int main(void)
   MX_TIM10_Init();
   MX_TIM1_Init();
   MX_TIM3_Init();
+  MX_TIM11_Init();
+  MX_TIM2_Init();
+  MX_TIM5_Init();
 
   /* USER CODE BEGIN 2 */
+
+  /* Disable EXTI interrupt which were enable in MX_GPIO_Init() */
+  HAL_NVIC_DisableIRQ(EXTI9_5_IRQn);
   HAL_UART_Receive_DMA(&huart1, &data_in_item, 1);
   /* USER CODE END 2 */
 
@@ -215,6 +227,7 @@ void SystemClock_Config(void)
 
   RCC_OscInitTypeDef RCC_OscInitStruct;
   RCC_ClkInitTypeDef RCC_ClkInitStruct;
+  RCC_PeriphCLKInitTypeDef PeriphClkInitStruct;
 
     /**Configure the main internal regulator output voltage 
     */
@@ -224,7 +237,8 @@ void SystemClock_Config(void)
 
     /**Initializes the CPU, AHB and APB busses clocks 
     */
-  RCC_OscInitStruct.OscillatorType = RCC_OSCILLATORTYPE_HSI;
+  RCC_OscInitStruct.OscillatorType = RCC_OSCILLATORTYPE_HSI|RCC_OSCILLATORTYPE_HSE;
+  RCC_OscInitStruct.HSEState = RCC_HSE_ON;
   RCC_OscInitStruct.HSIState = RCC_HSI_ON;
   RCC_OscInitStruct.HSICalibrationValue = 16;
   RCC_OscInitStruct.PLL.PLLState = RCC_PLL_ON;
@@ -255,6 +269,13 @@ void SystemClock_Config(void)
   RCC_ClkInitStruct.APB2CLKDivider = RCC_HCLK_DIV2;
 
   if (HAL_RCC_ClockConfig(&RCC_ClkInitStruct, FLASH_LATENCY_5) != HAL_OK)
+  {
+    _Error_Handler(__FILE__, __LINE__);
+  }
+
+  PeriphClkInitStruct.PeriphClockSelection = RCC_PERIPHCLK_RTC;
+  PeriphClkInitStruct.RTCClockSelection = RCC_RTCCLKSOURCE_LSI;
+  if (HAL_RCCEx_PeriphCLKConfig(&PeriphClkInitStruct) != HAL_OK)
   {
     _Error_Handler(__FILE__, __LINE__);
   }
@@ -301,6 +322,38 @@ static void MX_TIM1_Init(void)
   sMasterConfig.MasterOutputTrigger = TIM_TRGO_RESET;
   sMasterConfig.MasterSlaveMode = TIM_MASTERSLAVEMODE_DISABLE;
   if (HAL_TIMEx_MasterConfigSynchronization(&htim1, &sMasterConfig) != HAL_OK)
+  {
+    _Error_Handler(__FILE__, __LINE__);
+  }
+
+}
+
+/* TIM2 init function */
+static void MX_TIM2_Init(void)
+{
+
+  TIM_ClockConfigTypeDef sClockSourceConfig;
+  TIM_MasterConfigTypeDef sMasterConfig;
+
+  htim2.Instance = TIM2;
+  htim2.Init.Prescaler = 89;
+  htim2.Init.CounterMode = TIM_COUNTERMODE_UP;
+  htim2.Init.Period = 3600000000;
+  htim2.Init.ClockDivision = TIM_CLOCKDIVISION_DIV1;
+  if (HAL_TIM_Base_Init(&htim2) != HAL_OK)
+  {
+    _Error_Handler(__FILE__, __LINE__);
+  }
+
+  sClockSourceConfig.ClockSource = TIM_CLOCKSOURCE_INTERNAL;
+  if (HAL_TIM_ConfigClockSource(&htim2, &sClockSourceConfig) != HAL_OK)
+  {
+    _Error_Handler(__FILE__, __LINE__);
+  }
+
+  sMasterConfig.MasterOutputTrigger = TIM_TRGO_RESET;
+  sMasterConfig.MasterSlaveMode = TIM_MASTERSLAVEMODE_DISABLE;
+  if (HAL_TIMEx_MasterConfigSynchronization(&htim2, &sMasterConfig) != HAL_OK)
   {
     _Error_Handler(__FILE__, __LINE__);
   }
@@ -354,6 +407,38 @@ static void MX_TIM3_Init(void)
 
 }
 
+/* TIM5 init function */
+static void MX_TIM5_Init(void)
+{
+
+  TIM_ClockConfigTypeDef sClockSourceConfig;
+  TIM_MasterConfigTypeDef sMasterConfig;
+
+  htim5.Instance = TIM5;
+  htim5.Init.Prescaler = 44999;
+  htim5.Init.CounterMode = TIM_COUNTERMODE_UP;
+  htim5.Init.Period = 0;
+  htim5.Init.ClockDivision = TIM_CLOCKDIVISION_DIV2;
+  if (HAL_TIM_Base_Init(&htim5) != HAL_OK)
+  {
+    _Error_Handler(__FILE__, __LINE__);
+  }
+
+  sClockSourceConfig.ClockSource = TIM_CLOCKSOURCE_INTERNAL;
+  if (HAL_TIM_ConfigClockSource(&htim5, &sClockSourceConfig) != HAL_OK)
+  {
+    _Error_Handler(__FILE__, __LINE__);
+  }
+
+  sMasterConfig.MasterOutputTrigger = TIM_TRGO_RESET;
+  sMasterConfig.MasterSlaveMode = TIM_MASTERSLAVEMODE_DISABLE;
+  if (HAL_TIMEx_MasterConfigSynchronization(&htim5, &sMasterConfig) != HAL_OK)
+  {
+    _Error_Handler(__FILE__, __LINE__);
+  }
+
+}
+
 /* TIM10 init function */
 static void MX_TIM10_Init(void)
 {
@@ -364,6 +449,38 @@ static void MX_TIM10_Init(void)
   htim10.Init.Period = 999;
   htim10.Init.ClockDivision = TIM_CLOCKDIVISION_DIV1;
   if (HAL_TIM_Base_Init(&htim10) != HAL_OK)
+  {
+    _Error_Handler(__FILE__, __LINE__);
+  }
+
+}
+
+/* TIM11 init function */
+static void MX_TIM11_Init(void)
+{
+
+  TIM_IC_InitTypeDef sConfigIC;
+
+  htim11.Instance = TIM11;
+  htim11.Init.Prescaler = 1799;
+  htim11.Init.CounterMode = TIM_COUNTERMODE_UP;
+  htim11.Init.Period = 65535;
+  htim11.Init.ClockDivision = TIM_CLOCKDIVISION_DIV1;
+  if (HAL_TIM_Base_Init(&htim11) != HAL_OK)
+  {
+    _Error_Handler(__FILE__, __LINE__);
+  }
+
+  if (HAL_TIM_IC_Init(&htim11) != HAL_OK)
+  {
+    _Error_Handler(__FILE__, __LINE__);
+  }
+
+  sConfigIC.ICPolarity = TIM_INPUTCHANNELPOLARITY_BOTHEDGE;
+  sConfigIC.ICSelection = TIM_ICSELECTION_DIRECTTI;
+  sConfigIC.ICPrescaler = TIM_ICPSC_DIV1;
+  sConfigIC.ICFilter = 0;
+  if (HAL_TIM_IC_ConfigChannel(&htim11, &sConfigIC, TIM_CHANNEL_1) != HAL_OK)
   {
     _Error_Handler(__FILE__, __LINE__);
   }
@@ -420,13 +537,14 @@ static void MX_GPIO_Init(void)
   GPIO_InitTypeDef GPIO_InitStruct;
 
   /* GPIO Ports Clock Enable */
+  __HAL_RCC_GPIOF_CLK_ENABLE();
   __HAL_RCC_GPIOH_CLK_ENABLE();
   __HAL_RCC_GPIOA_CLK_ENABLE();
   __HAL_RCC_GPIOE_CLK_ENABLE();
   __HAL_RCC_GPIOG_CLK_ENABLE();
 
   /*Configure GPIO pin Output Level */
-  HAL_GPIO_WritePin(GPIOG, LINK_LED_Pin|LED_RED_Pin, GPIO_PIN_RESET);
+  HAL_GPIO_WritePin(GPIOG, ACTUATOR_START_Pin|LINK_LED_Pin|LED_RED_Pin, GPIO_PIN_RESET);
 
   /*Configure GPIO pins : L_ENCODER_IND_B_Pin L_ENCODER_IND_A_Pin */
   GPIO_InitStruct.Pin = L_ENCODER_IND_B_Pin|L_ENCODER_IND_A_Pin;
@@ -434,8 +552,8 @@ static void MX_GPIO_Init(void)
   GPIO_InitStruct.Pull = GPIO_PULLDOWN;
   HAL_GPIO_Init(GPIOE, &GPIO_InitStruct);
 
-  /*Configure GPIO pins : LINK_LED_Pin LED_RED_Pin */
-  GPIO_InitStruct.Pin = LINK_LED_Pin|LED_RED_Pin;
+  /*Configure GPIO pins : ACTUATOR_START_Pin LINK_LED_Pin LED_RED_Pin */
+  GPIO_InitStruct.Pin = ACTUATOR_START_Pin|LINK_LED_Pin|LED_RED_Pin;
   GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
   GPIO_InitStruct.Pull = GPIO_NOPULL;
   GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
@@ -471,6 +589,9 @@ void main_app(void const * argument)
   /* Infinite loop */
   for(;;)
   {
+        /* FIXME: Please implement some mechanism which put task to block state e.g. delay for 1 ms */
+	    /* FIXME: Implement in every tasks: vTaskDelete(NULL) beyond of infinitive loop */
+
         main_app_task_state = osThreadGetState(MainAppHandle);
         modbus_task_state = osThreadGetState(ModbusTaskHandle);
         config_task_state = osThreadGetState(config_task_handle);
@@ -498,16 +619,10 @@ void main_app(void const * argument)
                         SET_STATUS_G1(ST_G1_SAFETY_SWITCH);
                         RST_BUTTON_G1(SW3_G1_GO_TO_SAFETY_SWITCH);
                         break;
-
-                case SW8_G1_TERMINATE_PROCEDURE:
-                        /* Suspend all working tasks and clear tasks statues */
-                        KeepOnlyThisTask(NULL);
-                        RST_STATUS_G1(ST_G1_CONFIGURATION);
-                        RST_STATUS_G1(ST_G1_CURTAIN);
-                        RST_STATUS_G1(ST_G1_SAFETY_SWITCH);
-                        RST_BUTTON_G1(SW8_G1_TERMINATE_PROCEDURE);
-                        break;
         }
+
+        /* Suspend task for 100 ms - user can't change option faster than 100 ms */
+        osDelay(100);
   }
   /* USER CODE END main_app */
 }
@@ -523,17 +638,23 @@ void main_app(void const * argument)
 void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
 {
 /* USER CODE BEGIN Callback 0 */
-  /*
-   * 10 bits for charakter
-   * 19200 / 10 = 1920 characters per 1000 ms
-   * 1000 ms / 1920 = 0,52 ms on character
-   * 3.5 * 0,52 ms = 1.82 ms ~ 2 ms
-   */
-  if (htim->Instance == TIM10) {
-      modbus_timeout = true;
-      HAL_GPIO_WritePin(LINK_LED_GPIO_Port, LINK_LED_Pin, GPIO_PIN_RESET);
-      HAL_TIM_Base_Stop_IT(&htim10);
-  }
+        /*
+        * 10 bits for charakter
+        * 19200 / 10 = 1920 characters per 1000 ms
+        * 1000 ms / 1920 = 0,52 ms on character
+        * 3.5 * 0,52 ms = 1.82 ms ~ 2 ms
+        */
+        if (htim->Instance == TIM10) {
+                modbus_timeout = true;
+                HAL_GPIO_WritePin(LINK_LED_GPIO_Port, LINK_LED_Pin, GPIO_PIN_RESET);
+                HAL_TIM_Base_Stop_IT(&htim10);
+        }
+
+  	    /* TIM2 is a 32 bit timer (resolution 1 us) this interrupt is a protect from timer overflow - after 1 h */
+        if (htim->Instance == TIM2) {
+
+        }
+
 /* USER CODE END Callback 0 */
   if (htim->Instance == TIM14) {
     HAL_IncTick();

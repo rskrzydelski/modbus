@@ -15,6 +15,6 @@ osThreadId config_task_handle;
 void config_task(void const * argumen);
 
 /* Configuration variables */
-volatile uint16_t time_overflow_cnf;        /* Time in [ms] how long have to be last until last edge on encoder that we treat as stop machine */
+volatile uint32_t time_overflow_cnf;        /* Time in [ms] how long have to be last until last edge on encoder that we treat as stop machine */
 
 #endif /* APP_MEASURE_INCLUDE_CONFIG_TASK_H_ */

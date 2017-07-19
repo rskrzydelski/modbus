@@ -10,8 +10,10 @@
 
 #include "modbus_app.h"
 #include "modbus.h"
+#include "euclides.h"
 
 extern TIM_HandleTypeDef htim10;
+extern TIM_HandleTypeDef htim11;
 extern UART_HandleTypeDef huart1;
 
 void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart)
@@ -31,16 +33,70 @@ void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart)
 /* This interrupt is called on every encoder edge */
 void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin)
 {
-    if (GPIO_Pin == L_ENCODER_IND_A_Pin) {
-    	data_to_master[data_to_master_3]++;
-    }
+        /* FIXME: Check from which pin interrupt is */
+        /* If machine go at least 10 mm, then set ST_G1_IS_MOVING status - detect machine movement */
+        if (TIM1->CNT > 200) {
+                SET_STATUS_G1(ST_G1_IS_MOVING);
+        }
 
-    if (GPIO_Pin == L_ENCODER_IND_B_Pin) {
-    	data_to_master[data_to_master_3]++;
-    }
+        /* Information from encoder - every edge */
+        if (DIR == LINEAR_ROLL_OUT) {
+            if (GPIO_Pin == L_ENCODER_IND_A_Pin) {
+            	/* Assign machine stop time */
+            	stop_machine_time__ = MACHINE_STOP_TIME;
+            	/* Assign machine stop distance */
+            	stop_distance__ = (MACHINE_POSITION - machine_stop_signal_position);
+            	/* Clear timer on delay */
+//            	xTimerResetFromISR(timer_on_delay_id, osPriorityNormal + 1);
+            }
+
+            if (GPIO_Pin == L_ENCODER_IND_B_Pin) {
+            	/* Assign machine stop time */
+            	stop_machine_time__ = MACHINE_STOP_TIME;
+            	/* Assign machine stop distance */
+            	stop_distance__ = (MACHINE_POSITION - machine_stop_signal_position);
+            	/* Clear timer on delay */
+//            	xTimerResetFromISR(timer_on_delay_id, osPriorityNormal + 1);
+            }
+        }
 }
 
+/*
+ *
+ * */
 void HAL_TIM_IC_CaptureCallback(TIM_HandleTypeDef *htim)
 {
+/*
+ * Sensors signal - maximum measurement fault
+ */
+        if (htim->Instance == TIM11) {
+                /* If rising edge */
+                if (HAL_GPIO_ReadPin(actuator_feedback_GPIO_Port, actuator_feedback_Pin)) {
+                        /* Stop machine signal */
+                        stop_machine_signal_handle();
 
+                        /* Start pulse length */
+                        start_actuator_pulse = TIM11->CCR1;
+                } else {
+                        /* End pulse length */
+                        end_actuator_pulse = TIM11->CCR1;
+
+            			if (end_actuator_pulse > start_actuator_pulse) {
+            				actuator_pulse = end_actuator_pulse - start_actuator_pulse;
+            			} else {
+            				actuator_pulse = (65535 - start_actuator_pulse) + end_actuator_pulse;
+            			}
+
+                        /* Stop fuse timer for XOR */
+            	        osTimerStop (xor_no_signal_id);
+
+            			/* Disable Interrupt */
+                        __HAL_TIM_DISABLE_IT(&htim11, TIM_IT_CC1);
+                }
+        }
 }
+
+/*
+ * This callback is currently in main.c, because it is used for MxCube for freeRTOS
+ *  */
+//void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)

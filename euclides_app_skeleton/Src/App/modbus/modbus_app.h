@@ -15,7 +15,7 @@
 #include "modbus.h"
 
 enum {
-	device_status_g1, device_status_g2, data_to_master_1, data_to_master_2, data_to_master_3,
+	device_status_g1, device_status_g2, xor_pulse, stop_machine_time, stop_distance,
 	data_to_master_4, data_to_master_5, data_to_master_6, data_to_master_7, data_to_master_8,
 	DATA_TO_MASTER_NUM
 };

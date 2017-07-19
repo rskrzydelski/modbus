@@ -56,6 +56,8 @@
 
 /* Private define ------------------------------------------------------------*/
 
+#define actuator_feedback_Pin GPIO_PIN_7
+#define actuator_feedback_GPIO_Port GPIOF
 #define IC_PREDKOSC_LINIOWA_Pin GPIO_PIN_7
 #define IC_PREDKOSC_LINIOWA_GPIO_Port GPIOA
 #define L_ENCODER_IND_B_Pin GPIO_PIN_7
@@ -68,6 +70,8 @@
 #define LINEAR_ENCODER_B_GPIO_Port GPIOE
 #define LINEAR_ENCODER_A_Pin GPIO_PIN_11
 #define LINEAR_ENCODER_A_GPIO_Port GPIOE
+#define ACTUATOR_START_Pin GPIO_PIN_2
+#define ACTUATOR_START_GPIO_Port GPIOG
 #define LINK_LED_Pin GPIO_PIN_13
 #define LINK_LED_GPIO_Port GPIOG
 #define LED_RED_Pin GPIO_PIN_14
